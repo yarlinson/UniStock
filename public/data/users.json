@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@unistock.com",
+      "password": "admin123",
+      "name": "Administrador",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "email": "profesor@unistock.com",
+      "password": "prof123",
+      "name": "Profesor Deportes",
+      "role": "profesor"
+    },
+    {
+      "id": 3,
+      "email": "estudiante@unistock.com",
+      "password": "est123",
+      "name": "Estudiante",
+      "role": "estudiante"
+    }
+  ]
+}
