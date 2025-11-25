@@ -114,10 +114,10 @@ export default function InventarioPage() {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {isAdmin ? 'Gestión de Inventario' : 'Inventario'}
+                  {userIsAdmin ? 'Gestión de Inventario' : 'Inventario'}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  {isAdmin 
+                  {userIsAdmin 
                     ? 'Administra el inventario de implementos deportivos' 
                     : 'Explora los implementos disponibles para préstamo'}
                 </p>
