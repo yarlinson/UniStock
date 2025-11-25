@@ -69,14 +69,14 @@ export default function LoginPage() {
         // Estructura esperada según documentación de Swagger
         console.log('Usando información de response.usuario');
         // Normalizar el rol
-        const rawRole = response.usuario.rol || response.usuario.role || 'Estudiante';
+        const rawRole = response.usuario.rol || 'Estudiante';
         const normalizedRole = typeof rawRole === 'string' 
           ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase()
           : 'Estudiante';
         
         usuarioData = {
           id: response.usuario.id || 0,
-          name: response.usuario.nombre || response.usuario.name || email.split('@')[0],
+          name: response.usuario.nombre || email.split('@')[0],
           email: response.usuario.email || email,
           role: normalizedRole
         };
@@ -90,14 +90,14 @@ export default function LoginPage() {
         // Por si el backend devuelve 'user' en lugar de 'usuario'
         console.log('Usando información de response.user');
         // Normalizar el rol
-        const rawRole = response.user.rol || response.user.role || 'Estudiante';
+        const rawRole = response.user.rol || 'Estudiante';
         const normalizedRole = typeof rawRole === 'string' 
           ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase()
           : 'Estudiante';
         
         usuarioData = {
           id: response.user.id || 0,
-          name: response.user.nombre || response.user.name || email.split('@')[0],
+          name: response.user.nombre || email.split('@')[0],
           email: response.user.email || email,
           role: normalizedRole
         };
