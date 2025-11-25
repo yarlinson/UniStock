@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { implementosAPI, prestamosAPI, type Implemento, type Prestamo } from '../../lib/api';
-import { isAdmin } from '../../lib/auth';
 
 interface User {
   id: number;
@@ -106,7 +105,7 @@ export default function ReportesPage() {
     .sort()
     .slice(-6)
     .map(mes => {
-      const [año, mesNum] = mes.split('-');
+      const [, mesNum] = mes.split('-');
       const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
       return { mes: nombresMeses[parseInt(mesNum) - 1], cantidad: prestamosPorMes[mes] };
     });
@@ -121,7 +120,6 @@ export default function ReportesPage() {
     );
   }
 
-  const userIsAdmin = isAdmin(user);
 
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">

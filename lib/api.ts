@@ -1,5 +1,8 @@
 import { API_BASE_URL, type LoginResponse, type Implemento, type Prestamo, type RegistrarPrestamoRequest, type Usuario } from './config';
 
+// Re-exportar tipos para facilitar las importaciones
+export type { Implemento, Prestamo, RegistrarPrestamoRequest, Usuario, LoginResponse } from './config';
+
 // Función auxiliar para obtener el token
 const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
