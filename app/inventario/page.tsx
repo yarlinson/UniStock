@@ -518,7 +518,7 @@ function EditImplementoModal({
             <select
               required
               value={formData.estado}
-              onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, estado: e.target.value as 'Disponible' | 'Prestado' | 'Mantenimiento' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 bg-white"
             >
               <option value="Disponible">Disponible</option>
