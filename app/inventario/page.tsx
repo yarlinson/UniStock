@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { implementosAPI, type Implemento } from '../../lib/api';
@@ -66,11 +67,13 @@ export default function InventarioPage() {
       return;
     }
 
+    const toastId = toast.loading('Eliminando implemento...');
     try {
       await implementosAPI.delete(id);
+      toast.success('Implemento eliminado correctamente', { id: toastId });
       await loadImplementos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar implemento');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar implemento', { id: toastId });
     }
   };
 
@@ -219,9 +222,11 @@ export default function InventarioPage() {
                       {isAdmin(user) && (
                         <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                           <button
-                            disabled
-                            className="flex-1 px-3 py-2 bg-gray-400 text-white text-sm rounded-lg cursor-not-allowed opacity-50 flex items-center justify-center gap-1"
-                            title="Funcionalidad en desarrollo"
+                            onClick={() => {
+                              setImplementoToEdit(implemento);
+                              setShowEditModal(true);
+                            }}
+                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -309,10 +314,14 @@ function CreateImplementoModal({ onClose, onSuccess }: { onClose: () => void; on
         formDataToSend.append('imagen', formData.imagen);
       }
 
+      const toastId = toast.loading('Creando implemento...');
       await implementosAPI.create(formDataToSend);
+      toast.success('Implemento creado correctamente', { id: toastId });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear implemento');
+      const errorMsg = err instanceof Error ? err.message : 'Error al crear implemento';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -417,6 +426,7 @@ function EditImplementoModal({
     nombre: implemento.nombre,
     categoria: implemento.categoria,
     descripcion: implemento.descripcion,
+    estado: implemento.estado,
     imagen: null as File | null
   });
   const [loading, setLoading] = useState(false);
@@ -432,14 +442,19 @@ function EditImplementoModal({
       formDataToSend.append('nombre', formData.nombre);
       formDataToSend.append('categoria', formData.categoria);
       formDataToSend.append('descripcion', formData.descripcion);
+      formDataToSend.append('estado', formData.estado);
       if (formData.imagen) {
         formDataToSend.append('imagen', formData.imagen);
       }
 
+      const toastId = toast.loading('Actualizando implemento...');
       await implementosAPI.update(implemento.id, formDataToSend);
+      toast.success('Implemento actualizado correctamente', { id: toastId });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar implemento');
+      const errorMsg = err instanceof Error ? err.message : 'Error al actualizar implemento';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -494,6 +509,22 @@ function EditImplementoModal({
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 bg-white"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estado *
+            </label>
+            <select
+              required
+              value={formData.estado}
+              onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 bg-white"
+            >
+              <option value="Disponible">Disponible</option>
+              <option value="Prestado">Prestado</option>
+              <option value="Mantenimiento">Mantenimiento</option>
+            </select>
           </div>
 
           <div>

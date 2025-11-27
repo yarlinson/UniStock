@@ -1,5 +1,7 @@
 // Configuración de la API
-export const API_BASE_URL = 'https://unistock-api.azurewebsites.net';
+//export const API_BASE_URL = 'https://unistock-api.azurewebsites.net';
+export const API_BASE_URL = 'http://localhost:5099';
+
 
 // Tipos de datos
 export interface Usuario {
@@ -35,11 +37,13 @@ export interface Prestamo {
   fechaDevolucionReal: string | null;
   estado: 'Activo' | 'Devuelto' | 'Retrasado';
   implemento: Implemento;
+  usuario?: Usuario;
 }
 
 export interface RegistrarPrestamoRequest {
   usuarioId: number;
   implementoId: number;
   fechaDevolucionProgramada: string;
+  fechaPrestamo?: string;
 }
 

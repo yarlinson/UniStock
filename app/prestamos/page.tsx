@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { prestamosAPI, implementosAPI, usuariosAPI, type Prestamo, type Implemento, type Usuario } from '../../lib/api';
@@ -33,13 +34,26 @@ export default function PrestamosPage() {
     }
     setUser(JSON.parse(userData));
     loadPrestamos();
+
+    // Recargar préstamos cada 30 segundos para detectar cambios de estado
+    const interval = setInterval(() => {
+      loadPrestamos();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [router]);
 
   const loadPrestamos = async () => {
     try {
       setLoading(true);
       setError('');
-      const data = await prestamosAPI.getMisPrestamos();
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      
+      // Si es admin, obtener todos los préstamos; si no, obtener solo los suyos
+      const data = isAdmin(user) 
+        ? await prestamosAPI.getTodos() 
+        : await prestamosAPI.getMisPrestamos();
       setPrestamos(data);
     } catch (err) {
       setError('Error al cargar préstamos. Por favor, intenta de nuevo.');
@@ -57,11 +71,13 @@ export default function PrestamosPage() {
       return;
     }
 
+    const toastId = toast.loading('Registrando devolución...');
     try {
       await prestamosAPI.devolucion(prestamoId);
+      toast.success('Devolución registrada correctamente', { id: toastId });
       await loadPrestamos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al registrar devolución');
+      toast.error(err instanceof Error ? err.message : 'Error al registrar devolución', { id: toastId });
     }
   };
 
@@ -221,7 +237,15 @@ export default function PrestamosPage() {
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h3 className="text-xl font-semibold text-gray-900">{prestamo.implemento.nombre}</h3>
+                            {/* Mostrar usuario si es admin */}
+                            {userIsAdmin && (prestamo as any).usuario && (
+                              <>
+                                <p className="text-sm text-gray-500">Usuario</p>
+                                <p className="text-sm font-medium text-gray-900 mb-2">{(prestamo as any).usuario.nombre}</p>
+                                <p className="text-xs text-gray-500">{(prestamo as any).usuario.email}</p>
+                              </>
+                            )}
+                            <h3 className="text-xl font-semibold text-gray-900 mt-2">{prestamo.implemento.nombre}</h3>
                             <p className="text-sm text-gray-500">Código: {prestamo.implemento.codigo}</p>
                             <p className="text-sm text-gray-600">{prestamo.implemento.categoria}</p>
                           </div>
@@ -265,8 +289,8 @@ export default function PrestamosPage() {
                           )}
                         </div>
 
-                        {/* Indicador de días restantes para préstamos activos */}
-                        {prestamo.estado === 'Activo' && (() => {
+                        {/* Indicador de días restantes para préstamos activos o retrasados */}
+                        {(prestamo.estado === 'Activo' || prestamo.estado === 'Retrasado') && (() => {
                           const fechaDevolucion = new Date(prestamo.fechaDevolucionProgramada);
                           const hoy = new Date();
                           const diasRestantes = Math.ceil((fechaDevolucion.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
@@ -291,7 +315,11 @@ export default function PrestamosPage() {
                               {userIsAdmin && (
                                 <button
                                   onClick={() => handleDevolucion(prestamo.id)}
-                                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                  className={`px-4 py-2 rounded-lg transition-colors text-white ${
+                                    estaRetrasado
+                                      ? 'bg-red-600 hover:bg-red-700'
+                                      : 'bg-green-600 hover:bg-green-700'
+                                  }`}
                                 >
                                   Registrar Devolución
                                 </button>
@@ -331,6 +359,7 @@ export default function PrestamosPage() {
 
 // Componente Modal para crear préstamo
 function CreatePrestamoModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  // Estado para el modal
   const [formData, setFormData] = useState({
     usuarioId: '',
     usuarioSeleccionado: null as Usuario | null,
@@ -380,8 +409,17 @@ function CreatePrestamoModal({ onClose, onSuccess }: { onClose: () => void; onSu
 
   const buscarUsuarios = async (termino: string) => {
     try {
-      // Intentar buscar en la API
-      const resultados = await usuariosAPI.buscar(termino);
+      // Obtener todos los usuarios del endpoint correcto
+      const todosUsuarios = await usuariosAPI.getAll();
+      const terminoLower = termino.toLowerCase();
+      
+      // Filtrar usuarios que coincidan
+      const resultados = todosUsuarios.filter(usuario => 
+        usuario.id.toString().includes(termino) ||
+        usuario.nombre.toLowerCase().includes(terminoLower) ||
+        usuario.email.toLowerCase().includes(terminoLower)
+      );
+      
       setUsuarios(resultados);
       setMostrarResultadosUsuario(resultados.length > 0);
     } catch (err) {
@@ -456,18 +494,30 @@ function CreatePrestamoModal({ onClose, onSuccess }: { onClose: () => void; onSu
       return;
     }
 
+    const toastId = toast.loading('Registrando préstamo...');
     try {
-      // Convertir fecha local a ISO 8601
-      const fechaISO = new Date(formData.fechaDevolucionProgramada).toISOString();
+      // datetime-local devuelve hora en zona local del cliente: "YYYY-MM-DDTHH:mm"
+      // Convertir a UTC para enviar al servidor
+      const localDateTime = new Date(formData.fechaDevolucionProgramada);
+      
+      // Restar el offset de zona horaria para obtener UTC
+      const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+      const fechaISO = utcDateTime.toISOString();
+      
+      // Obtener la fecha actual del cliente en UTC también
+      const ahora = new Date();
+      const fechaPrestamoUTC = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000).toISOString();
       
       await prestamosAPI.registrar({
         usuarioId: parseInt(formData.usuarioId),
         implementoId: parseInt(formData.implementoId),
-        fechaDevolucionProgramada: fechaISO
+        fechaDevolucionProgramada: fechaISO,
+        fechaPrestamo: fechaPrestamoUTC
       });
+      toast.success('Préstamo registrado correctamente', { id: toastId });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrar préstamo');
+      toast.error(err instanceof Error ? err.message : 'Error al registrar préstamo', { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -636,7 +686,6 @@ function CreatePrestamoModal({ onClose, onSuccess }: { onClose: () => void; onSu
             <input
               type="datetime-local"
               required
-              min={today}
               value={formData.fechaDevolucionProgramada}
               onChange={(e) => setFormData({ ...formData, fechaDevolucionProgramada: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 bg-white"

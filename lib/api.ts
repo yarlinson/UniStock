@@ -218,60 +218,69 @@ export const implementosAPI = {
 
 // API de Usuarios
 export const usuariosAPI = {
+  // Obtener todos los usuarios (solo Admin)
+  getAll: async (): Promise<Usuario[]> => {
+    const response = await fetchWithAuth('/api/Auth/usuarios');
+    
+    if (!response.ok) {
+      throw new Error('Error al obtener usuarios');
+    }
+    
+    return response.json();
+  },
+
+  // Obtener un usuario específico (solo Admin)
+  getById: async (id: number): Promise<Usuario> => {
+    const response = await fetchWithAuth(`/api/Auth/usuarios/${id}`);
+    
+    if (!response.ok) {
+      throw new Error('Error al obtener usuario');
+    }
+    
+    return response.json();
+  },
+
+  // Actualizar un usuario (solo Admin)
+  update: async (id: number, usuario: Partial<Usuario>): Promise<string> => {
+    const response = await fetchWithAuth(`/api/Auth/usuarios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(usuario),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Error al actualizar usuario');
+    }
+
+    return response.text();
+  },
+
+  // Eliminar un usuario (solo Admin)
+  delete: async (id: number): Promise<string> => {
+    const response = await fetchWithAuth(`/api/Auth/usuarios/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Error al eliminar usuario');
+    }
+
+    return response.text();
+  },
+
   // Buscar usuarios por término (ID, nombre o email)
   buscar: async (termino: string): Promise<Usuario[]> => {
     try {
-      // Intentar buscar en el endpoint de búsqueda
-      const response = await fetchWithAuth(`/api/Usuarios/buscar?termino=${encodeURIComponent(termino)}`);
-      
-      if (response.ok) {
-        return response.json();
-      }
-      
-      // Si no existe el endpoint de búsqueda, intentar obtener todos y filtrar localmente
-      if (response.status === 404) {
-        const todosUsuarios = await usuariosAPI.getAll();
-        const terminoLower = termino.toLowerCase();
-        return todosUsuarios.filter(usuario => 
-          usuario.id.toString().includes(termino) ||
-          usuario.nombre.toLowerCase().includes(terminoLower) ||
-          usuario.email.toLowerCase().includes(terminoLower)
-        );
-      }
-      
-      throw new Error('Error al buscar usuarios');
+      const todosUsuarios = await usuariosAPI.getAll();
+      const terminoLower = termino.toLowerCase();
+      return todosUsuarios.filter(usuario => 
+        usuario.id.toString().includes(termino) ||
+        usuario.nombre.toLowerCase().includes(terminoLower) ||
+        usuario.email.toLowerCase().includes(terminoLower)
+      );
     } catch (err) {
-      // Si falla completamente, intentar obtener todos y filtrar
-      try {
-        const todosUsuarios = await usuariosAPI.getAll();
-        const terminoLower = termino.toLowerCase();
-        return todosUsuarios.filter(usuario => 
-          usuario.id.toString().includes(termino) ||
-          usuario.nombre.toLowerCase().includes(terminoLower) ||
-          usuario.email.toLowerCase().includes(terminoLower)
-        );
-      } catch {
-        console.warn('No se pudo buscar usuarios:', err);
-        return [];
-      }
-    }
-  },
-  
-  // Obtener todos los usuarios (solo Admin)
-  getAll: async (): Promise<Usuario[]> => {
-    try {
-      const response = await fetchWithAuth('/api/Usuarios');
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          return [];
-        }
-        throw new Error('Error al obtener usuarios');
-      }
-      
-      return response.json();
-    } catch (err) {
-      console.warn('Endpoint de usuarios no disponible:', err);
+      console.warn('No se pudo buscar usuarios:', err);
       return [];
     }
   },
@@ -311,6 +320,17 @@ export const prestamosAPI = {
   // Obtener mis préstamos
   getMisPrestamos: async (): Promise<Prestamo[]> => {
     const response = await fetchWithAuth('/api/Prestamos/mis-prestamos');
+
+    if (!response.ok) {
+      throw new Error('Error al obtener préstamos');
+    }
+
+    return response.json();
+  },
+
+  // Obtener todos los préstamos (solo Admin)
+  getTodos: async (): Promise<Prestamo[]> => {
+    const response = await fetchWithAuth('/api/Prestamos/todos');
 
     if (!response.ok) {
       throw new Error('Error al obtener préstamos');
