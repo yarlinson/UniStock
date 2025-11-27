@@ -1,6 +1,6 @@
 // Configuración de la API
-//export const API_BASE_URL = 'https://unistock-api.azurewebsites.net';
-export const API_BASE_URL = 'http://localhost:5099';
+export const API_BASE_URL = 'https://unistock-api.azurewebsites.net';
+//export const API_BASE_URL = 'http://localhost:5099';
 
 
 // Tipos de datos
